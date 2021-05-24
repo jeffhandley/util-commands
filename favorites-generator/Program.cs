@@ -56,7 +56,7 @@ namespace favorites_generator
             { "Adam / Carlos / David", "Extensions-FileSystem,System.Console,System.Diagnostics.Process,System.IO,System.IO.Compression,System.Linq.Parallel,System.Memory,System.Threading.Channels,System.Threading.Tasks" },
             { "Buyaa / Jose / Krzysztof", "Meta,System.CodeDom,System.ComponentModel.Composition,System.Composition,System.Configuration,System.DirectoryServices,System.Reflection,System.Reflection.Emit,System.Reflection.Metadata,System.Resources,System.Xml" },
             { "Eirik / Layomi", "System.Collections,System.Formats.Cbor,System.Linq,System.Text.Encoding,System.Text.Encodings.Web,System.Text.Json" },
-            { "Jeremy / Levi", "System.Formats.Asn1,System.Security" },
+            { "Jeremy / Levi", "System.Formats.Asn1,System.Security,PAL-libraries" },
             { "Prashanth / Tanner", "System.Buffers,System.Numerics,System.Numerics.Tensors,System.Runtime,System.Runtime.Intrinsics,System.Text.RegularExpressions" },
         };
 
