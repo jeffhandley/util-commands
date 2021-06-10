@@ -8,15 +8,20 @@ namespace AreaPodTeamManager
     {
         static void Main(string[] args)
         {
-            Debugger.Launch();
-            Debugger.Break();
+            var lead = args[0];
+            var authToken = args[1];
 
-            var team = new Team("area-System.IO.Compression", new[] { "jeffhandley" }, new[] { "adamsitnik", "carlossanlop", "Jozkee" });
+            var areas = AreaOwners.GetAsync("dotnet", "runtime").Result;
+            var leadAreas = areas.Where(a => a.Lead == lead);
+            var gh = new GitHub(authToken);
 
-            var gh = new GitHub(args[0]);
-            team = gh.CreateTeam(team);
+            foreach (var area in leadAreas)
+            {
+                var team = new Team(area.AreaLabel, new[] { lead }, area.Owners);
+                team = gh.CreateTeam(team);
 
-            Console.WriteLine($"Created {team.Name} ({team.Slug}) with {team.Members.Count()} members");
+                Console.WriteLine($"Created {team.Name} ({team.Slug}) with {team.Members.Count()} members");
+            }
         }
     }
 }
