@@ -102,16 +102,26 @@ namespace AreaPodTeamManager
             }
         }
 
-        public Team CreateTeam(Team team, bool removeOldMembers = false)
+        public Team PopulateTeamSlug(Team team)
         {
             var existingTeam = ExistingTeams.SingleOrDefault(t => t.Name.ToLowerInvariant() == team.Name.ToLowerInvariant());
-            var members = Enumerable.Empty<string>();
 
             if (existingTeam is not null)
             {
                 team = team with { Slug = existingTeam.Slug };
-                members = GetExistingTeamMembers(team);
+            }
 
+            return team;
+        }
+
+        public Team CreateTeam(Team team, bool removeOldMembers = false)
+        {
+            team = PopulateTeamSlug(team);
+            var members = Enumerable.Empty<string>();
+
+            if (team.Slug is not null)
+            {
+                members = GetExistingTeamMembers(team);
                 Console.WriteLine($"Team {team.Name} ({team.Slug}) already exists.");
             }
             else
