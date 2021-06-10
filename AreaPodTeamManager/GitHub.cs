@@ -1,6 +1,7 @@
 ﻿using RestSharp;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
@@ -79,13 +80,39 @@ namespace AreaPodTeamManager
             }
         }
 
-        public Team CreateTeam(Team team)
+        public IEnumerable<string> GetExistingTeamMembers(Team team)
+        {
+            var request = new RestRequest(Method.GET);
+            request.AddHeader("Authorization", "Bearer " + _authToken);
+
+            var url = $"{ApiTeams}/{team.Slug}/members";
+            var client = new RestClient(url) { Timeout = -1 };
+            var response = client.Execute(request);
+
+            if (!response.IsSuccessful)
+            {
+                throw new ApplicationException(response.ErrorMessage);
+            }
+
+            var members = JsonDocument.Parse(response.Content).RootElement;
+
+            foreach (var member in members.EnumerateArray())
+            {
+                yield return member.GetProperty("login").GetString();
+            }
+        }
+
+        public Team CreateTeam(Team team, bool removeOldMembers = false)
         {
             var existingTeam = ExistingTeams.SingleOrDefault(t => t.Name.ToLowerInvariant() == team.Name.ToLowerInvariant());
+            var members = Enumerable.Empty<string>();
 
             if (existingTeam is not null)
             {
                 team = team with { Slug = existingTeam.Slug };
+                members = GetExistingTeamMembers(team);
+
+                Console.WriteLine($"Team {team.Name} ({team.Slug}) already exists.");
             }
             else
             {
@@ -110,40 +137,88 @@ namespace AreaPodTeamManager
 
                 var slug = GetTeamSlugFromTeamResponse(response.Content);
                 team = team with { Slug = slug };
+
+                Console.WriteLine($"Team {team.Name} ({team.Slug}) was created. Maintainers: {string.Join(',', team.Maintainers)}");
             }
 
-            var membership = AddTeamMembers(team);
+            var membersAdded = new List<string>();
 
-            if (membership.Any(m => !m.IsSuccessful))
+            foreach(var member in team.Members)
             {
-                throw new ApplicationException($"Members could not be added to {team.Name} ({team.Slug}): {string.Join(',', membership.Where(m => !m.IsSuccessful).Select(m => m.Member))}");
+                if (!members.Contains(member, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (!AddTeamMember(team, member))
+                    {
+                        Console.WriteLine($"Could not add members to {team.Name} ({team.Slug}). You must be a team maintainer.");
+                        break;
+                    }
+
+                    membersAdded.Add(member);
+                }
+            }
+
+            if (membersAdded.Any())
+            {
+                Console.WriteLine($"Added members to {team.Name} ({team.Slug}): {string.Join(',', membersAdded)}");
+            }
+
+            if (removeOldMembers)
+            {
+                var membersRemoved = new List<string>();
+
+                foreach (var member in members)
+                {
+                    if (!team.Members.Contains(member, StringComparer.OrdinalIgnoreCase) && !team.Maintainers.Contains(member, StringComparer.OrdinalIgnoreCase))
+                    {
+                        RemoveTeamMember(team, member);
+                        membersRemoved.Add(member);
+                    }
+                }
+
+                if (membersRemoved.Any())
+                {
+                    Console.WriteLine($"Removed members from {team.Name} ({team.Slug}): {string.Join(',', membersRemoved)}");
+                }
             }
 
             return team;
         }
 
-        public IEnumerable<(string Member, bool IsSuccessful)> AddTeamMembers(Team team)
+        public bool AddTeamMember(Team team, string member)
         {
             if (team.Slug is null)
             {
                 throw new InvalidOperationException($"Team Slug cannot be null. Team Name: {team.Name}");
             }
 
-            var responses = new List<(string Member, bool IsSuccessful)>();
-
             var request = new RestRequest(Method.PUT);
             request.AddHeader("Authorization", "Bearer " + _authToken);
 
-            foreach (var member in team.Members)
-            {
-                var url = $"{ApiTeams}/{team.Slug}/memberships/{member}";
-                var client = new RestClient(url) { Timeout = -1 };
-                var response = client.Execute(request);
+            var url = $"{ApiTeams}/{team.Slug}/memberships/{member}";
+            var client = new RestClient(url) { Timeout = -1 };
+            var response = client.Execute(request);
 
-                responses.Add((member, response.IsSuccessful));
+            return response.IsSuccessful;
+        }
+
+        public void RemoveTeamMember(Team team, string member)
+        {
+            if (team.Slug is null)
+            {
+                throw new InvalidOperationException($"Team Slug cannot be null. Team Name: {team.Name}");
             }
 
-            return responses;
+            var request = new RestRequest(Method.DELETE);
+            request.AddHeader("Authorization", "Bearer " + _authToken);
+
+            var url = $"{ApiTeams}/{team.Slug}/memberships/{member}";
+            var client = new RestClient(url) { Timeout = -1 };
+            var response = client.Execute(request);
+
+            if (!response.IsSuccessful)
+            {
+                throw new ApplicationException($"Could not remove {member} from {team.Name} ({team.Slug}).");
+            }
         }
     }
 

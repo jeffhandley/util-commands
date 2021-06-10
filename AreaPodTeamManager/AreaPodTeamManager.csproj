@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
+    <NoWarn>$(NoWarn);NETSDK1048</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
