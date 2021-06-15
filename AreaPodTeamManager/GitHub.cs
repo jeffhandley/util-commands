@@ -114,7 +114,7 @@ namespace AreaPodTeamManager
             return team;
         }
 
-        public Team CreateTeam(Team team, bool removeOldMembers = false)
+        public Team CreateTeam(Team team, bool removeOldMembers, bool dryrun)
         {
             team = PopulateTeamSlug(team);
             var members = Enumerable.Empty<string>();
@@ -126,29 +126,37 @@ namespace AreaPodTeamManager
             }
             else
             {
-                var request = new RestRequest(Method.POST);
-                request.AddHeader("Authorization", "Bearer " + _authToken);
-                request.AddHeader("Content-Type", "application/json");
-                request.AddJsonBody(new
+                if (!dryrun)
                 {
-                    name = team.Name,
-                    description = team.Description,
-                    maintainers = team.Maintainers.ToArray(),
-                    privacy = "closed"
-                });
+                    var request = new RestRequest(Method.POST);
+                    request.AddHeader("Authorization", "Bearer " + _authToken);
+                    request.AddHeader("Content-Type", "application/json");
+                    request.AddJsonBody(new
+                    {
+                        name = team.Name,
+                        description = team.Description,
+                        maintainers = team.Maintainers.ToArray(),
+                        privacy = "closed"
+                    });
 
-                var client = new RestClient(ApiTeams) { Timeout = -1 };
-                var response = client.Execute(request);
+                    var client = new RestClient(ApiTeams) { Timeout = -1 };
+                    var response = client.Execute(request);
 
-                if (!response.IsSuccessful)
-                {
-                    throw new ApplicationException(response.ErrorMessage);
+                    if (!response.IsSuccessful)
+                    {
+                        throw new ApplicationException(response.ErrorMessage);
+                    }
+
+                    var slug = GetTeamSlugFromTeamResponse(response.Content);
+                    team = team with { Slug = slug };
+
+                    Console.WriteLine($"Team {team.Name} ({team.Slug}) was created. Maintainers: {string.Join(',', team.Maintainers)}");
                 }
-
-                var slug = GetTeamSlugFromTeamResponse(response.Content);
-                team = team with { Slug = slug };
-
-                Console.WriteLine($"Team {team.Name} ({team.Slug}) was created. Maintainers: {string.Join(',', team.Maintainers)}");
+                else
+                {
+                    team = team with { Slug = team.Name + "-slug" };
+                    Console.WriteLine($"DRY RUN: Team {team.Name} would be created. Maintainers: {string.Join(',', team.Maintainers)}");
+                }
             }
 
             var membersAdded = new List<string>();
@@ -157,7 +165,7 @@ namespace AreaPodTeamManager
             {
                 if (!members.Contains(member, StringComparer.OrdinalIgnoreCase))
                 {
-                    if (!AddTeamMember(team, member))
+                    if (!AddTeamMember(team, member, dryrun))
                     {
                         Console.WriteLine($"Could not add members to {team.Name} ({team.Slug}). You must be a team maintainer.");
                         break;
@@ -180,7 +188,7 @@ namespace AreaPodTeamManager
                 {
                     if (!team.Members.Contains(member, StringComparer.OrdinalIgnoreCase) && !team.Maintainers.Contains(member, StringComparer.OrdinalIgnoreCase))
                     {
-                        RemoveTeamMember(team, member);
+                        RemoveTeamMember(team, member, dryrun);
                         membersRemoved.Add(member);
                     }
                 }
@@ -194,61 +202,75 @@ namespace AreaPodTeamManager
             return team;
         }
 
-        public bool AddTeamMember(Team team, string member)
+        public bool AddTeamMember(Team team, string member, bool dryrun)
         {
             if (team.Slug is null)
             {
                 throw new InvalidOperationException($"Team Slug cannot be null. Team Name: {team.Name}");
             }
 
-            var request = new RestRequest(Method.PUT);
-            request.AddHeader("Authorization", "Bearer " + _authToken);
+            if (!dryrun)
+            {
+                var request = new RestRequest(Method.PUT);
+                request.AddHeader("Authorization", "Bearer " + _authToken);
 
-            var url = $"{ApiTeams}/{team.Slug}/memberships/{member}";
-            var client = new RestClient(url) { Timeout = -1 };
-            var response = client.Execute(request);
+                var url = $"{ApiTeams}/{team.Slug}/memberships/{member}";
+                var client = new RestClient(url) { Timeout = -1 };
+                var response = client.Execute(request);
 
-            return response.IsSuccessful;
+                return response.IsSuccessful;
+            }
+
+            return true;
         }
 
-        public void RemoveTeamMember(Team team, string member)
+        public void RemoveTeamMember(Team team, string member, bool dryrun)
         {
             if (team.Slug is null)
             {
                 throw new InvalidOperationException($"Team Slug cannot be null. Team Name: {team.Name}");
             }
 
-            var request = new RestRequest(Method.DELETE);
-            request.AddHeader("Authorization", "Bearer " + _authToken);
-
-            var url = $"{ApiTeams}/{team.Slug}/memberships/{member}";
-            var client = new RestClient(url) { Timeout = -1 };
-            var response = client.Execute(request);
-
-            if (!response.IsSuccessful)
+            if (!dryrun)
             {
-                throw new ApplicationException($"Could not remove {member} from {team.Name} ({team.Slug}).");
+                var request = new RestRequest(Method.DELETE);
+                request.AddHeader("Authorization", "Bearer " + _authToken);
+
+                var url = $"{ApiTeams}/{team.Slug}/memberships/{member}";
+                var client = new RestClient(url) { Timeout = -1 };
+                var response = client.Execute(request);
+
+                if (!response.IsSuccessful)
+                {
+                    throw new ApplicationException($"Could not remove {member} from {team.Name} ({team.Slug}).");
+                }
             }
         }
 
-        public bool AddTeamRepository(Team team, string repository)
+        public bool AddTeamRepository(Team team, string repository, bool dryrun)
         {
             if (team.Slug is null)
             {
                 throw new InvalidOperationException($"Team Slug cannot be null. Team Name: {team.Name}");
             }
 
-            var request = new RestRequest(Method.PUT);
-            request.AddHeader("Authorization", "Bearer " + _authToken);
-            request.AddJsonBody(new {
-                permission = "triage"
-            });
+            if (!dryrun)
+            {
+                var request = new RestRequest(Method.PUT);
+                request.AddHeader("Authorization", "Bearer " + _authToken);
+                request.AddJsonBody(new
+                {
+                    permission = "triage"
+                });
 
-            var url = $"{ApiTeams}/{team.Slug}/repos/{repository}";
-            var client = new RestClient(url) { Timeout = -1 };
-            var response = client.Execute(request);
+                var url = $"{ApiTeams}/{team.Slug}/repos/{repository}";
+                var client = new RestClient(url) { Timeout = -1 };
+                var response = client.Execute(request);
 
-            return response.IsSuccessful;
+                return response.IsSuccessful;
+            }
+
+            return true;
         }
     }
 

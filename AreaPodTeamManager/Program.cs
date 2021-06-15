@@ -12,6 +12,7 @@ namespace AreaPodTeamManager
             string lead = null;
             bool removeOldMembers = false;
             string authToken = null;
+            bool dryrun = false;
             List<string> includeAreas = new();
             List<string> excludeAreas = new();
             List<string> addMembers = new();
@@ -69,6 +70,10 @@ namespace AreaPodTeamManager
                         addRepositories.Add(GetArgumentValue());
                         break;
 
+                    case "--dryrun":
+                        dryrun = true;
+                        break;
+
                     default:
                         ShowCommandSyntax();
                         break;
@@ -87,14 +92,14 @@ namespace AreaPodTeamManager
                 areas = areas.Where(a => a.Lead.ToLowerInvariant() == lead.ToLowerInvariant());
             }
 
-            if (includeAreas is not null)
+            if (includeAreas.Any())
             {
-                areas = areas.Where(a => includeAreas.Contains(a.AreaLabel, StringComparer.InvariantCultureIgnoreCase));
+                areas = areas.Where(a => includeAreas.Any(included => a.AreaLabel.Contains(included, StringComparison.InvariantCultureIgnoreCase)));
             }
 
-            if (excludeAreas is not null)
+            if (excludeAreas.Any())
             {
-                areas = areas.Where(a => !excludeAreas.Contains(a.AreaLabel, StringComparer.InvariantCultureIgnoreCase));
+                areas = areas.Where(a => !excludeAreas.Any(excluded => a.AreaLabel.Contains(excluded, StringComparison.InvariantCultureIgnoreCase)));
             }
 
             var gh = new GitHub(authToken);
@@ -102,19 +107,19 @@ namespace AreaPodTeamManager
             foreach (var area in areas)
             {
                 var team = new Team(area.AreaLabel, new[] { lead }, area.Owners);
+                team = gh.PopulateTeamSlug(team);
 
-                if (!addMembers.Any())
+                if (team.Slug is null)
                 {
-                    team = gh.CreateTeam(team, removeOldMembers);
+                    team = gh.CreateTeam(team, removeOldMembers, dryrun);
                 }
-                else
+                else if (addMembers.Any())
                 {
-                    team = gh.PopulateTeamSlug(team);
                     bool hadError = false;
 
                     foreach (var member in addMembers)
                     {
-                        if (!gh.AddTeamMember(team, member))
+                        if (!gh.AddTeamMember(team, member, dryrun))
                         {
                             hadError = true;
                             break;
@@ -137,7 +142,7 @@ namespace AreaPodTeamManager
 
                     foreach (var repo in addRepositories)
                     {
-                        if (!gh.AddTeamRepository(team, repo))
+                        if (!gh.AddTeamRepository(team, repo, dryrun))
                         {
                             hadError = true;
                             break;
