@@ -15,6 +15,7 @@ namespace AreaPodTeamManager
             List<string> includeAreas = new();
             List<string> excludeAreas = new();
             List<string> addMembers = new();
+            List<string> addRepositories = new();
 
             void ShowCommandSyntax()
             {
@@ -64,6 +65,10 @@ namespace AreaPodTeamManager
                         addMembers.Add(GetArgumentValue());
                         break;
 
+                    case "--addrepository":
+                        addRepositories.Add(GetArgumentValue());
+                        break;
+
                     default:
                         ShowCommandSyntax();
                         break;
@@ -100,7 +105,7 @@ namespace AreaPodTeamManager
 
                 if (!addMembers.Any())
                 {
-                    gh.CreateTeam(team, removeOldMembers);
+                    team = gh.CreateTeam(team, removeOldMembers);
                 }
                 else
                 {
@@ -123,6 +128,29 @@ namespace AreaPodTeamManager
                     else
                     {
                         Console.WriteLine($"Could not add members to {team.Name} ({team.Slug}). You must be a team maintainer.");
+                    }
+                }
+
+                if (addRepositories.Any())
+                {
+                    bool hadError = false;
+
+                    foreach (var repo in addRepositories)
+                    {
+                        if (!gh.AddTeamRepository(team, repo))
+                        {
+                            hadError = true;
+                            break;
+                        }
+                    }
+
+                    if (!hadError)
+                    {
+                        Console.WriteLine($"Added repositories to {team.Name} ({team.Slug}): {string.Join(',', addRepositories)}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Could not add repositories to {team.Name} ({team.Slug}). You must be a repository administrator.");
                     }
                 }
             }

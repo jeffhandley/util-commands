@@ -230,6 +230,26 @@ namespace AreaPodTeamManager
                 throw new ApplicationException($"Could not remove {member} from {team.Name} ({team.Slug}).");
             }
         }
+
+        public bool AddTeamRepository(Team team, string repository)
+        {
+            if (team.Slug is null)
+            {
+                throw new InvalidOperationException($"Team Slug cannot be null. Team Name: {team.Name}");
+            }
+
+            var request = new RestRequest(Method.PUT);
+            request.AddHeader("Authorization", "Bearer " + _authToken);
+            request.AddJsonBody(new {
+                permission = "triage"
+            });
+
+            var url = $"{ApiTeams}/{team.Slug}/repos/{repository}";
+            var client = new RestClient(url) { Timeout = -1 };
+            var response = client.Execute(request);
+
+            return response.IsSuccessful;
+        }
     }
 
     record Team(string Name, IEnumerable<string> Maintainers, IEnumerable<string> Members)
