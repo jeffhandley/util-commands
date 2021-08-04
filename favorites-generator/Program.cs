@@ -27,6 +27,10 @@ namespace favorites_generator
         {
             { "stale", "https://github.com/dotnet/runtime/pulls?q=is%3Apr+is%3Aopen+label%3Aarea-{0}+sort%3Aupdated-asc+-is:draft" },
             { "untriaged", "https://github.com/dotnet/runtime/issues?q=is%3Aopen+is%3Aissue+label%3Auntriaged+label%3Aarea-{0}+sort%3Aupdated-asc" },
+            { "needs-further-triage", "https://github.com/dotnet/runtime/issues?q=is%3Aopen+is%3Aissue+label%3A\"needs%20further%20triage\"+label%3Aarea-{0}+sort%3Aupdated-asc" },
+            { "no-milestone", "https://github.com/dotnet/runtime/issues?q=is%3Aopen+is%3Aissue+no%3Amilestone+-label%3Auntriaged+label%3Aarea-{0}+sort%3Aupdated-asc" },
+            { "6.0.0-issues", "https://github.com/dotnet/runtime/issues?q=is%3Aopen+is%3Aissue+milestone%3A6.0.0+label%3Aarea-{0}+sort%3Aupdated-asc" },
+            { "6.0.0-pulls", "https://github.com/dotnet/runtime/pulls?q=is%3Aopen+is%3Apr+milestone%3A6.0.0+label%3Aarea-{0}+sort%3Aupdated-asc" },
             { "issues", "https://github.com/dotnet/runtime/issues?q=is%3Aopen+is%3Aissue+label%3Aarea-{0}+sort%3Aupdated-asc+" }
         };
 
@@ -34,6 +38,10 @@ namespace favorites_generator
         {
             { "stale", "issues / prs,Pulls (stale)," },
             { "untriaged", "issues / prs,Issues (untriaged)," },
+            { "needs-further-triage", "issues / prs,Issues (needs further triage)," },
+            { "no-milestone", "issues / prs,Issues (no milestone)," },
+            { "6.0.0-issues", "issues / prs,Issues (6.0.0)," },
+            { "6.0.0-pulls", "issues / prs,Pulls (6.0.0)," },
             { "issues", "issues / prs,Issues (all)," }
         };
 
@@ -66,22 +74,42 @@ namespace favorites_generator
             {
                 new string[] { "stale", "adam" },
                 new string[] { "untriaged", "adam" },
+                new string[] { "needs-further-triage", "adam" },
+                new string[] { "no-milestone", "adam" },
+                new string[] { "6.0.0-issues", "adam" },
+                new string[] { "6.0.0-pulls", "adam" },
                 new string[] { "issues", "adam" },
 
                 new string[] { "stale", "buyaa" },
                 new string[] { "untriaged", "buyaa" },
+                new string[] { "needs-further-triage", "buyaa" },
+                new string[] { "no-milestone", "buyaa" },
+                new string[] { "6.0.0-issues", "buyaa" },
+                new string[] { "6.0.0-pulls", "buyaa" },
                 new string[] { "issues", "buyaa" },
 
                 new string[] { "stale", "eirik" },
                 new string[] { "untriaged", "eirik" },
+                new string[] { "needs-further-triage", "eirik" },
+                new string[] { "no-milestone", "eirik" },
+                new string[] { "6.0.0-issues", "eirik" },
+                new string[] { "6.0.0-pulls", "eirik" },
                 new string[] { "issues", "eirik" },
 
                 new string[] { "stale", "jeremy" },
                 new string[] { "untriaged", "jeremy" },
+                new string[] { "needs-further-triage", "jeremy" },
+                new string[] { "no-milestone", "jeremy" },
+                new string[] { "6.0.0-issues", "jeremy" },
+                new string[] { "6.0.0-pulls", "jeremy" },
                 new string[] { "issues", "jeremy" },
 
                 new string[] { "stale", "prashanth" },
                 new string[] { "untriaged", "prashanth" },
+                new string[] { "needs-further-triage", "prashanth" },
+                new string[] { "no-milestone", "prashanth" },
+                new string[] { "6.0.0-issues", "prashanth" },
+                new string[] { "6.0.0-pulls", "prashanth" },
                 new string[] { "issues", "prashanth" },
             };
 
